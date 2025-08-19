@@ -5,7 +5,8 @@ async function calcularAlpha(tb, ts) {
   const tb_entero = Math.floor(tb);
   const tb_decimal = Math.round((tb - tb_entero) * 10);
 
-  const fila = tabla.find(f => f.TB_entero === tb_entero);
+  const fila = tabla.find(f => Number(f.TB_entero) === Number(tb_entero));
+
   if (!fila || fila[tb_decimal] === undefined) {
     throw new Error(`TB fuera de rango: ${tb}`);
   }
@@ -47,3 +48,5 @@ async function calcularTodo() {
     resultado.innerText = error.message;
   }
 }
+console.log("Buscando TB_entero:", tb_entero);
+console.log("Tabla cargada:", tabla);

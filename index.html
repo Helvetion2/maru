@@ -1,29 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+  <meta charset="UTF-8">
   <title>Calculadora de Punto de Rocío</title>
 </head>
 <body>
-  <h1>Punto de Rocío - Alpha</h1>
-  <label>Temperatura Bulbo Húmedo (TB): <input type="number" step="0.1" id="tb"></label><br>
-  <label>Temperatura Seca (TS): <input type="number" step="0.1" id="ts"></label><br>
-  <button onclick="mostrarResultado()">Calcular Alpha</button>
+  <h1>Calculadora de Punto de Rocío</h1>
+
+  <label for="tb">Temperatura de Bulbo Húmedo (TB):</label>
+  <input type="number" step="0.1" id="tb" required><br><br>
+
+  <label for="ts">Temperatura Seca (TS):</label>
+  <input type="number" step="0.1" id="ts" required><br><br>
+
+  <button onclick="calcularTodo()">Calcular</button>
 
   <h2 id="resultado"></h2>
 
   <script src="script.js"></script>
-  <script>
-    async function mostrarResultado() {
-      const tb = parseFloat(document.getElementById('tb').value);
-      const ts = parseFloat(document.getElementById('ts').value);
-
-      try {
-        const alpha = await calcularAlpha(tb, ts);
-        document.getElementById('resultado').innerText = `Alpha: ${alpha.toFixed(2)}`;
-      } catch (e) {
-        document.getElementById('resultado').innerText = e.message;
-      }
-    }
-  </script>
 </body>
 </html>

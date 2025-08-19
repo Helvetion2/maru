@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Punto de Rocío</title>
+  <meta name="description" content="Calcula el punto de rocío a partir de temperatura y humedad relativa. Página liviana, sin dependencias y lista para hostear gratis." />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121937;
+      --muted: #93a1c3;
+      --fg: #e9ecf8;
+      --accent: #7aa2ff;
+      --ok: #2ecc71;
+      --warn: #f1c40f;
+      --err: #ff5c5c;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #162048 0%, #0b1020 60%);
+      color: var(--fg);
+      min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+    .wrap { width: 100%; max-width: 840px; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+      border: 1px solid rgba(255,255,255,.06); border-radius: 20px; box-shadow: var(--shadow);
+      padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: clamp(22px, 3.0vw, 32px); letter-spacing: .2px; }
+    p.sub { margin: 0; color: var(--muted); font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .field { grid-column: span 12; display: grid; gap: 6px; }
+    @media (min-width: 720px){ .field.half { grid-column: span 6; } }
+    label { font-size: 13px; color: var(--muted); }
+    input[type="number"], select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: var(--fg); outline: none; transition: border .2s, box-shadow .2s; }
+    input[type="number"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(122,162,255,.15); }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .btn { appearance: none; border: none; border-radius: 12px; padding: 12px 16px; background: var(--accent); color: #0a1023; font-weight: 700; cursor: pointer; transition: transform .05s ease-in-out, filter .2s; }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary { background: rgba(255,255,255,.1); color: var(--fg); font-weight: 600; }
+    .btn:hover { filter: brightness(1.05); }
+    .result { margin-top: 12px; padding: 18px; border-radius: 16px; background: rgba(122,162,255,.08); border: 1px solid rgba(122,162,255,.25); }
+    .result strong { font-size: clamp(22px, 4vw, 36px); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { padding: 6px 10px; font-size: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.2); border-radius: 999px; color: var(--muted); }
+    footer { margin-top: 18px; color: var(--muted); font-size: 12px; text-align: center; }
+    .hint { font-size: 12px; color: var(--muted); }
+    .err { color: var(--err); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div>
+          <h1>Calculadora de Punto de Rocío</h1>
+          <p class="sub">Usa la fórmula de Magnus-Tetens (sobre agua) para estimar el punto de rocío a partir de <strong>temperatura</strong> y <strong>humedad relativa</strong>.</p>
+        </div>
+      </header>
+
+      <form id="form" autocomplete="off" onsubmit="event.preventDefault();calc()">
+        <div class="grid">
+          <div class="field half">
+            <label for="temp">Temperatura del aire</label>
+            <div class="row">
+              <input id="temp" type="number" step="0.1" inputmode="decimal" placeholder="Ej: 22.5" required />
+              <select id="unit">
+                <option value="C">°C</option>
+                <option value="F">°F</option>
+              </select>
+            </div>
+            <div class="hint">Rango recomendado: −80 a 60 °C (−112 a 140 °F)</div>
+          </div>
+
+          <div class="field half">
+            <label for="rh">Humedad relativa (%)</label>
+            <input id="rh" type="number" step="0.1" inputmode="decimal" placeholder="0–100" required />
+            <div class="hint">Debes ingresar un valor entre 0 y 100.</div>
+          </div>
+
+          <div class="field half">
+            <button type="submit" class="btn">Calcular</button>
+          </div>
+          <div class="field half">
+            <button type="button" class="btn secondary" onclick="demo()">Ejemplo</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="out" class="result" style="display:none"></div>
+      <div id="chips" class="chips" style="display:none"></div>
+
+      <footer>
+        <p class="hint">Fórmula: Magnus-Tetens (a=17.62, b=243.12°C). Apropiada para aire sobre agua líquida a presión atmosférica. Para aplicaciones críticas, considera calibración y correcciones específicas.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    function toCelsius(val, unit){
+      return unit === 'F' ? (val - 32) * 5/9 : val;
+    }
+    function toFahrenheit(c){ return (c * 9/5) + 32; }
+
+    // Magnus-Tetens (sobre agua): devuelve Td en °C
+    function dewPointC(Tc, RH){
+      const a = 17.62, b = 243.12; // constantes
+      const gamma = Math.log(RH/100) + (a * Tc) / (b + Tc);
+      return (b * gamma) / (a - gamma);
+    }
+
+    function calc(){
+      const tEl = document.getElementById('temp');
+      const rhEl = document.getElementById('rh');
+      const unit = document.getElementById('unit').value;
+      const out = document.getElementById('out');
+      const chips = document.getElementById('chips');
+
+      const T = parseFloat(tEl.value.replace(',', '.'));
+      const RH = parseFloat(rhEl.value.replace(',', '.'));
+
+      // Validaciones básicas
+      let err = '';
+      if (Number.isNaN(T)) err = 'Ingresa una temperatura válida.';
+      else if (unit === 'C' && (T < -120 || T > 80)) err = 'Temperatura fuera de rango (°C).';
+      else if (unit === 'F' && (T < -184 || T > 176)) err = 'Temperatura fuera de rango (°F).';
+      if (Number.isNaN(RH)) err = 'Ingresa una humedad relativa válida.';
+      else if (RH < 0 || RH > 100) err = 'La humedad relativa debe estar entre 0 y 100.';
+
+      if (err){
+        out.style.display = 'block';
+        out.innerHTML = `<span class="err">${err}</span>`;
+        chips.style.display = 'none';
+        return;
+      }
+
+      const Tc = toCelsius(T, unit);
+      const TdC = dewPointC(Tc, RH);
+      const TdF = toFahrenheit(TdC);
+
+      out.style.display = 'block';
+      out.innerHTML = `
+        <div>
+          <div>Punto de rocío estimado</div>
+          <strong>${TdC.toFixed(2)} °C</strong>
+          <div style="opacity:.8; margin-top:6px;">(${TdF.toFixed(2)} °F)</div>
+        </div>
+      `;
+
+      // chips informativos
+      const spread = Tc - TdC; // diferencia T - Td
+      const nearSaturation = (100 - RH) <= 5;
+      const frostRisk = TdC <= 0;
+      const tips = [
+        `ΔT (T−Td): ${spread.toFixed(2)} °C`,
+        `HR: ${RH.toFixed(1)} %`,
+        nearSaturation ? 'Aire casi saturado' : 'Aire no saturado',
+        frostRisk ? 'Riesgo de rocío helado' : 'Rocío líquido probable'
+      ];
+
+      chips.style.display = 'flex';
+      chips.innerHTML = tips.map(t => `<span class="chip">${t}</span>`).join('');
+    }
+
+    function demo(){
+      document.getElementById('temp').value = '22.5';
+      document.getElementById('unit').value = 'C';
+      document.getElementById('rh').value = '60';
+      calc();
+    }
+  </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ async function calcularAlpha(tb, ts) {
   return ts + valorTabla;
 }
 
-async function obtenerTdYpresion(alpha) {
+async function obtenerTdYpresionDesdeTabla2(alpha) {
   const response = await fetch('data/tabla_2.json');
   const tabla = await response.json();
 
@@ -22,15 +22,12 @@ async function obtenerTdYpresion(alpha) {
   const alpha_decimal = Math.round((alpha - alpha_entero) * 10);
 
   const fila = tabla[alpha_entero];
-  if (!fila) throw new Error("Alpha fuera de rango (entero)");
+  if (!fila) throw new Error(`Alpha fuera de rango (parte entera): ${alpha_entero}`);
 
   const datos = fila[alpha_decimal];
-  if (!datos) throw new Error("Alpha fuera de rango (decimal)");
+  if (!datos) throw new Error(`Alpha fuera de rango (decimal): ${alpha_decimal}`);
 
-  return {
-    punto_rocio: datos.td,
-    tension_vapor: datos.e
-  };
+  return datos; // { td: ..., e: ... }
 }
 
 async function calcularTodo() {
@@ -40,12 +37,11 @@ async function calcularTodo() {
 
   try {
     const alpha = await calcularAlpha(tb, ts);
-    const { punto_rocio, tension_vapor } = await obtenerTdYpresion(alpha);
+    const datos = await obtenerTdYpresionDesdeTabla2(alpha);
 
     resultado.innerHTML = `
-      <strong>Alpha:</strong> ${alpha.toFixed(2)}<br>
-      <strong>Punto de Rocío:</strong> ${punto_rocio} °C<br>
-      <strong>Tensión de vapor:</strong> ${tension_vapor} hPa
+      <strong>Punto de Rocío:</strong> ${datos.td} °C<br>
+      <strong>Tensión de vapor:</strong> ${datos.e} hPa
     `;
   } catch (error) {
     resultado.innerText = error.message;
